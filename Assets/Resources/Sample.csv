@@ -1,0 +1,8 @@
+Id,Name,ItemCount,Price,BonusRate,IsUnique
+1,Item1,1,10,0.5,False
+2,Item2,1,50,0.5,False
+3,Item3,1,100,0.5,False
+4,Item4,1,150,0.5,False
+5,Item5,1,200,0.5,False
+6,Item6,1,250,0.5,False
+7,Item7,1,300,0.5,False
