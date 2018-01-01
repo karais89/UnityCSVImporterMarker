@@ -29,6 +29,38 @@ csv 파일을 읽고, 자동으로 클래스 맵핑 해주는 툴 만들기.
 
 간단한 데이터들은 csv로 다루는게 가장 편할 것 같다.
 
+### 자료형 판단 방법
+
+자료형 판단 방법. 헤더 아래의 row를 읽는다.
+
+csv를 파서 한 결과인 해당 row 데이터는 무조건 string 값이다. 해당 string 값에서 자료형을 판단한다.
+
+간단한 트릭을 사용
+
+https://stackoverflow.com/questions/606365/c-sharp-doubt-finding-the-datatype/606381#606381
+
+```
+object ParseString(string str)
+{
+    int intValue;
+    double doubleValue;
+    char charValue;
+    bool boolValue;
+
+    // Place checks higher if if-else statement to give higher priority to type.
+    if (int.TryParse(str, out intValue))
+        return intValue;
+    else if (double.TryParse(str, out doubleValue))
+        return doubleValue;
+    else if (char.TryParse(str, out charValue))
+        return charValue;
+    else if (bool.TryParse(str, out boolValue))
+        return boolValue;
+
+    return null;
+}
+```
+
 ## 참조
 
 - [github/unityboot/assets/Scripts/Util/CsvParser](https://github.com/YacL/unityboot)
