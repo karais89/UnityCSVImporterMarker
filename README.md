@@ -25,3 +25,5 @@
 - 유니티 게임 제작 입문
 - [클리커 게임 함께 만들기 12](http://blog.naver.com/moibios/220740010492)
 - [lightweight-csv-reader-for-unity](https://bravenewmethod.com/2014/09/13/lightweight-csv-reader-for-unity)
+- [github/unity-excel-importer-marker](https://github.com/tsubaki/Unity-Excel-Importer-Maker)
+- [csv2table](https://www.assetstore.unity3d.com/kr/#!/content/36443)

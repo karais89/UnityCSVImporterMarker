@@ -4,7 +4,7 @@ using UnityEngine;
 // TODO : Auto Class Generater
 public class SampleCSVData
 {
-    public class CsvRow
+    public class CSVRow
     {
         public int Id { get; set; }
         public string Name { get; set; }
@@ -14,16 +14,28 @@ public class SampleCSVData
         public bool IsUnique { get; set; }
     }
 
-    public List<CsvRow> rows = new List<CsvRow>();
+    public List<CSVRow> rows = new List<CSVRow>();
 
-    public void Load(TextAsset csv)
+    public SampleCSVData(TextAsset csv)
+        : this(csv.text)
+    {
+        // empty
+    }
+
+    public SampleCSVData(string text)
     {
         rows.Clear();
-        
-        // TODO : csv parser
-        
-        // TODO : Add List row Data
-        CsvRow row = new CsvRow();
-        rows.Add(row);
+        var parserData = SimpleCSVParser.Parser(text);
+        for (int i = 0; i < parserData.Count; i++)
+        {
+            CSVRow row = new CSVRow();
+            row.Id = int.Parse(parserData[i][0]);
+            row.Name = parserData[i][1];
+            row.ItemCount = int.Parse(parserData[i][2]);
+            row.Price = int.Parse(parserData[i][3]);
+            row.BonusRate = float.Parse(parserData[i][4]);
+            row.IsUnique = bool.Parse(parserData[i][5]);
+            rows.Add(row);
+        }
     }
 }
