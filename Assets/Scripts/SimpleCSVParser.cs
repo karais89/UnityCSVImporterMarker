@@ -22,9 +22,7 @@ public static class SimpleCSVParser
         List<List<string>> allLines = new List<List<string>>();
         // 개행 코드 마다 분할해서 문자열 배열에 집어 넣는다.
         string[] lines = Regex.Split(text, LINE_SPLIT_REGEX);
-
-        // header를 제외하고 저장한다.
-        for (int i = 1; i < lines.Length; i++)
+        for (int i = 0; i < lines.Length; i++)
         {
             // 행 내의 워드를 배열에 저장 한다.
             string[] words = lines[i].Split(WORD_SPLIT);

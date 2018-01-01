@@ -26,7 +26,9 @@ public class SampleCSVData
     {
         rows.Clear();
         var parserData = SimpleCSVParser.Parser(text);
-        for (int i = 0; i < parserData.Count; i++)
+        
+        // header(첫번째 행)를 제외하고 저장한다.
+        for (int i = 1; i < parserData.Count; i++)
         {
             CSVRow row = new CSVRow();
             row.Id = int.Parse(parserData[i][0]);
