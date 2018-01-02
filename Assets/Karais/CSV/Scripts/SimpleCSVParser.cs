@@ -16,8 +16,12 @@
     {
         // new line regex
         private static readonly string LINE_SPLIT_REGEX = @"\r\n|\n\r|\n|\r";
-        private static readonly char WORD_SPLIT = ',';
-
+        // https://stackoverflow.com/questions/1757065/java-splitting-a-comma-separated-string-but-ignoring-commas-in-quotes
+        // 쌍 따옴표 안에 콤마는 무시한다.
+        private static readonly string WORD_SPLIT_REGEX = @",(?=(?:[^""]*""[^""]*"")*(?![^""]*""))"; 
+        // 쌍 따옴표 제거
+        private static readonly char[] TRIM_CHARS = { '\"' };
+        
         // 파싱한 데이터를 2차원 List의 string 형태로 반환 한다.
         public static List<List<string>> Parser(string text)
         {
@@ -27,11 +31,14 @@
             for (int i = 0; i < lines.Length; i++)
             {
                 // 행 내의 워드를 배열에 저장 한다.
-                string[] words = lines[i].Split(WORD_SPLIT);
+                string[] words = Regex.Split(lines[i], WORD_SPLIT_REGEX);
                 List<string> cachedWords = new List<string>();
                 for (int j = 0; j < words.Length; j++)
                 {
-                    cachedWords.Add(words[j]);
+                    string word = words[j];
+                    // 쌍 따옴표를 제거 한다.
+                    word = word.TrimStart(TRIM_CHARS).TrimEnd(TRIM_CHARS).Replace("\\", "");
+                    cachedWords.Add(word);
                 }
 
                 allLines.Add(cachedWords);
