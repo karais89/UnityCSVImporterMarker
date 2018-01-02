@@ -176,10 +176,7 @@ public class CSVMappingMaker : EditorWindow
 
     private void CreateFileCsvMapping()
     {
-        // template 파일 위치 변경시 변경 해줘야 됨.
-        string templateFilePath = "Assets/Editor/MappingTemplate.txt";
-        string templateStr = File.ReadAllText(templateFilePath);
-
+        string templateStr = CSVMappingTemplate.codeTemplate;
         templateStr = templateStr.Replace("$CLASS_NAME$", _className);
         templateStr = templateStr.Replace("$TYPES$", GetTypesBuilder().ToString());
         templateStr = templateStr.Replace("$EXPORT_DATA$", GetExportDataBuilder().ToString());
