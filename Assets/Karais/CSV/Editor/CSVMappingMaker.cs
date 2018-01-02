@@ -26,12 +26,13 @@ public class CSVMappingMaker : EditorWindow
         public string name;
     };
     
-    // todo : editorWindow에서 생성되는 경로 수정 할 수 있게
-    private static readonly string CLASS_CREATE_PATH = "Assets/Scripts/CSVData/"; // csvData 클래스가 생성되는 곳
+    private static readonly string BASE_CLASS_CREATE_PATH = "Assets/Scripts/CSVData/"; // 초기 csvData 클래스가 생성되는 곳
     private static readonly string KEY_PREFS = "CSVMappingMaker_"; // 윈도우 정보 임시 저장
+    
     private string _filePath; // csv 파일 경로
     private string _fileName; // csv 파일 이름
     private string _className; // csv 파일을 매핑할 클래스 이름
+    private string _createClassPath; // 클래스 파일이 생성되는 경로
     private List<RowParam> _rowParams = new List<RowParam>();
     private Vector2 _scrollPosition;
 
@@ -61,8 +62,9 @@ public class CSVMappingMaker : EditorWindow
             string csv = File.ReadAllText(window._filePath);
 
             // 해당 파일이 있으면 이전 정보를 세팅 해주고, 없으면 기본 값을 세팅 해준다.
+            window._createClassPath = EditorPrefs.GetString(GetKeyPrefsByCreateClassPath(), BASE_CLASS_CREATE_PATH);
             window._className = EditorPrefs.GetString(GetKeyPrefsByClassName(window), window._fileName + "CSVData");
-
+            
             // csv 파싱
             var data = SimpleCSVParser.Parser(csv);
             if (data.Count < 2)
@@ -106,6 +108,11 @@ public class CSVMappingMaker : EditorWindow
         return KEY_PREFS + window._fileName + ".className";
     }
 
+    private static string GetKeyPrefsByCreateClassPath()
+    {
+        return KEY_PREFS + ".createClassPath";
+    }
+    
     /// <summary>
     /// string 자료형 데이터로 데이터 타입을 판단해서 반환한다.
     /// 실수형의 경우는 무조건 float형을 반환하며, double형을 사용하고 싶을 경우네는 사용자가 EditorWindow상에서 변경 해준다.
@@ -142,11 +149,25 @@ public class CSVMappingMaker : EditorWindow
         var window = GetWindow<CSVMappingMaker>();
 
         GUILayout.Label("CSV Mapping To Class", EditorStyles.boldLabel);
+        
+        GUILayout.BeginHorizontal();
+        _createClassPath = EditorGUILayout.TextField("class Path", _createClassPath);
+        if (GUILayout.Button("Reset", GUILayout.Width(50)))
+        {
+            _createClassPath = BASE_CLASS_CREATE_PATH;
+            EditorPrefs.SetString(GetKeyPrefsByCreateClassPath(), _createClassPath);
+        }
+        GUILayout.EndHorizontal();
+        
         _className = EditorGUILayout.TextField("class Name", _className);
 
         if (GUILayout.Button("Csv Data Mapping!!"))
         {
+            EditorPrefs.SetString(GetKeyPrefsByCreateClassPath(), _createClassPath);
             EditorPrefs.SetString(GetKeyPrefsByClassName(window), _className);
+
+            Debug.Log(_createClassPath);
+            
             // 파일 생성 및 에셋 업데이트
             CreateFileCsvMapping();
             AssetDatabase.ImportAsset(_filePath);
@@ -181,9 +202,9 @@ public class CSVMappingMaker : EditorWindow
         templateStr = templateStr.Replace("$TYPES$", GetTypesBuilder().ToString());
         templateStr = templateStr.Replace("$EXPORT_DATA$", GetExportDataBuilder().ToString());
 
-        // todo : 파일 생성
-        Directory.CreateDirectory(CLASS_CREATE_PATH);
-        File.WriteAllText(CLASS_CREATE_PATH + _className + ".cs", templateStr);
+        // 파일 생성
+        Directory.CreateDirectory(_createClassPath);
+        File.WriteAllText(Path.Combine(_createClassPath, _className + ".cs"), templateStr);
     }
 
     private StringBuilder GetTypesBuilder()
