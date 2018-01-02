@@ -138,7 +138,7 @@
                 return ValueType.Float;
             }
     
-            if (Boolean.TryParse(rowData, out boolValue))
+            if (bool.TryParse(rowData, out boolValue))
             {
                 return ValueType.Bool;
             }
