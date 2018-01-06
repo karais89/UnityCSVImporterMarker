@@ -2,9 +2,7 @@
 {
     /*
      * CSV 파일을 읽어와서 클래스로 매핑 함.
-     */
-    
-    using System;
+     */    
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
@@ -12,7 +10,7 @@
     using UnityEngine;
     
     public class CSVMappingMaker : EditorWindow
-    {
+    {     
         private enum ValueType
         {
             Bool,
@@ -24,8 +22,10 @@
     
         private class RowParam
         {
-            public ValueType type;
-            public string name;
+            public bool isArray; // 데이터가 배열형인가? 쌍 따옴표 안에 콤마로 구분 된 데이터 "1,2,3,4,5"
+            public ValueType type; // 데이터 타입
+            public string name; // 키값
+            public string firstRowValue; // 첫번째 열 데이터 값 저장 (보여주는 용도)
         };
         
         private static readonly string BASE_CLASS_CREATE_PATH = "Assets/Scripts/CSVData/"; // 초기 csvData 클래스가 생성되는 곳
@@ -81,28 +81,60 @@
                 for (int i = 0; i < headerMeta.Count; i++)
                 {
                     RowParam param = new RowParam();
-    
+                    
                     param.name = headerMeta[i];
+                    param.firstRowValue = rowMeta[i];
     
-                    if (EditorPrefs.HasKey(GetKeyPrefsByType(window, param)))
-                    {
-                        param.type = (ValueType) EditorPrefs.GetInt(GetKeyPrefsByType(window, param));
-                    }
-                    else
-                    {
-                        param.type = GetValueTypeByRowMeta(rowMeta[i]);
-                    }
-    
+                    CheckArray(window, param, rowMeta[i]);
+                    CheckValue(window, param, rowMeta[i]);
+
                     window._rowParams.Add(param);
                 }
     
                 window.Show();
             }
         }
-    
+
+        private static void CheckValue(CSVMappingMaker window, RowParam param, string rowMeta)
+        {
+            // value type 체크
+            if (EditorPrefs.HasKey(GetKeyPrefsByType(window, param)))
+            {
+                param.type = (ValueType) EditorPrefs.GetInt(GetKeyPrefsByType(window, param));
+            }
+            else
+            {
+                string rowData = rowMeta;
+                if (param.isArray)
+                {
+                    rowData = rowData.Split(',')[0];
+                }
+                
+                param.type = GetValueTypeByRowMeta(rowData);
+            }
+        }
+
+        private static void CheckArray(CSVMappingMaker window, RowParam param, string rowMeta)
+        {
+            // array 체크
+            if (EditorPrefs.HasKey(GetKeyPrefsByIsArray(window, param)))
+            {
+                param.isArray = EditorPrefs.GetInt(GetKeyPrefsByIsArray(window, param)) != 0;
+            }
+            else
+            {
+                param.isArray = IsArrayByRowMeta(rowMeta);
+            }
+        }
+
         private static string GetKeyPrefsByType(CSVMappingMaker window, RowParam param)
         {
             return KEY_PREFS + window._fileName + ".type." + param.name;
+        }
+        
+        private static string GetKeyPrefsByIsArray(CSVMappingMaker window, RowParam param)
+        {
+            return KEY_PREFS + window._fileName + ".isArray." + param.name;
         }
     
         private static string GetKeyPrefsByClassName(CSVMappingMaker window)
@@ -145,6 +177,17 @@
     
             return ValueType.String;
         }
+
+        /// <summary>
+        /// 해당 자료형이 배열인가의 판단 여부
+        /// SimpleParser의 경우 쌍 따옴표안에 콤마의 경우 쌍 따옴표를 제거해주고 그대로 값에 대응해준다.
+        /// </summary>
+        /// <param name="rowData"></param>
+        /// <returns></returns>
+        private static bool IsArrayByRowMeta(string rowData)
+        {
+            return rowData.Split(',').Length > 1;
+        }
     
         private void OnGUI()
         {
@@ -181,15 +224,31 @@
             EditorGUILayout.LabelField("csv header settings");
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
             EditorGUILayout.BeginVertical("box");
-    
+            
             foreach (var row in _rowParams)
             {
+                row.isArray = EditorGUILayout.ToggleLeft("data type array?", row.isArray);
+                if (row.isArray)
+                {
+                    EditorGUILayout.LabelField("---[array]--- ex) \"1,2,3,4,5\" 쌍따옴표 안에 콤마로 데이터 구분");
+                }
+                
                 GUILayout.BeginHorizontal();
-    
+                
+                GUILayout.BeginVertical();
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("key: ", GUILayout.MaxWidth(80));
                 row.name = EditorGUILayout.TextField(row.name);
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("1st row val: ", GUILayout.MaxWidth(80));
+                row.firstRowValue = EditorGUILayout.TextField(row.firstRowValue);
+                GUILayout.EndHorizontal();
+                GUILayout.EndVertical();
+                
                 row.type = (ValueType) EditorGUILayout.EnumPopup(row.type, GUILayout.MaxWidth(100));
-                EditorPrefs.SetInt(GetKeyPrefsByType(window, row), (int) row.type);
-    
+                EditorPrefs.SetInt(GetKeyPrefsByType(window, row), (int)row.type);
+                EditorPrefs.SetInt(GetKeyPrefsByIsArray(window, row), row.isArray ? 1 : 0);
                 GUILayout.EndHorizontal();
             }
     
@@ -218,10 +277,16 @@
                 {
                     builder.AppendLine();
                 }
-    
+
                 var row = _rowParams[i];
+                string strType = row.type.ToString().ToLower();
+                if (row.isArray)
+                {
+                    strType = "List<" + strType + ">";
+                }
+                
                 builder.AppendFormat("        public {0} {1} {{ get; set; }}",
-                    row.type.ToString().ToLower(),
+                    strType,
                     row.name);
             }
             
@@ -237,22 +302,36 @@
                 {
                     builder.AppendLine();
                 }
-    
-                string formatStr = string.Format("parserData[i][{0}]", i);
+                
+                string strData = string.Format("parserData[i][{0}]", i);
+                string strFormat = strData;
+                string strType = _rowParams[i].type.ToString().ToLower();
                 switch (_rowParams[i].type)
                 {
                     case ValueType.Bool:
                     case ValueType.Int:
                     case ValueType.Float:
                     case ValueType.Double:
-                        formatStr = string.Format("{0}.Parse({1})", 
-                            _rowParams[i].type.ToString().ToLower(), 
-                            formatStr);
+                        strFormat = string.Format("{0}.Parse({1})", strType, strData);
                         break;
                     default:
                         break;
                 }
-                builder.AppendFormat("            row.{0} = {1};", _rowParams[i].name, formatStr);
+
+                if (_rowParams[i].isArray)
+                {
+                    if (_rowParams[i].type == ValueType.String)
+                    {
+                        strFormat = string.Format("new List<{0}>({1}.Split(','))", strType, strData);
+                    }
+                    else
+                    {
+                        strFormat = string.Format("new List<{0}>(Array.ConvertAll({1}.Split(','), {0}.Parse))", 
+                            strType, strData);   
+                    }
+                }
+                
+                builder.AppendFormat("            row.{0} = {1};", _rowParams[i].name, strFormat);   
             }
     
             return builder;
